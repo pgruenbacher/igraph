@@ -41,6 +41,9 @@ project(
   LANGUAGES C CXX
 )
 
+# make it relocatable for shared libraries if necessary
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # Include some compiler-related helpers and set global compiler options
 include(compilers)
 
