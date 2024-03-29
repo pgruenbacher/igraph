@@ -70,10 +70,10 @@ licence.
 #endif
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
 
 #include "lbfgs.h"
+#include "platform.h"
 
 #ifdef  _MSC_VER
 #define inline  __inline
@@ -139,7 +139,7 @@ typedef int (*line_search_proc)(
     callback_data_t *cd,
     const lbfgs_parameter_t *param
     );
-    
+
 static int line_search_backtracking(
     int n,
     lbfgsfloatval_t *x,
@@ -1122,7 +1122,7 @@ static int line_search_morethuente(
  *  @param  brackt  The pointer to the predicate if the trial value is
  *                  bracketed.
  *  @retval int     Status value. Zero indicates a normal termination.
- *  
+ *
  *  @see
  *      Jorge J. More and David J. Thuente. Line search algorithm with
  *      guaranteed sufficient decrease. ACM Transactions on Mathematical
@@ -1254,7 +1254,7 @@ static int update_trial_interval(
             x <- x, y <- t.
         - Case b: if f(t) <= f(x) && f'(t)*f'(x) > 0,
             x <- t, y <- y.
-        - Case c: if f(t) <= f(x) && f'(t)*f'(x) < 0, 
+        - Case c: if f(t) <= f(x) && f'(t)*f'(x) < 0,
             x <- t, y <- x.
      */
     if (*fx < *ft) {

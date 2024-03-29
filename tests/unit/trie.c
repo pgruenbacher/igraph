@@ -26,56 +26,56 @@
 
 #include "core/trie.h"
 
-#include "test_utilities.inc"
+#include "test_utilities.h"
 
-int main() {
+int main(void) {
 
     igraph_trie_t trie;
-    long int id;
-    int i;
-    char *str;
+    igraph_integer_t id;
+    igraph_integer_t i;
+    const char *str;
 
     /* init */
     igraph_trie_init(&trie, 0);
 
     /* add and get values */
     igraph_trie_get(&trie, "hello", &id);
-    printf("hello: %li\n", id);
+    printf("hello: %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "hepp", &id);
-    printf("hepp:  %li\n", id);
+    printf("hepp:  %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "alma", &id);
-    printf("alma:  %li\n", id);
+    printf("alma:  %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "also", &id);
-    printf("also:  %li\n", id);
+    printf("also:  %" IGRAPH_PRId "\n", id);
 
     igraph_trie_get(&trie, "hello", &id);
-    printf("hello: %li\n", id);
+    printf("hello: %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "hepp", &id);
-    printf("hepp:  %li\n", id);
+    printf("hepp:  %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "alma", &id);
-    printf("alma:  %li\n", id);
+    printf("alma:  %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "also", &id);
-    printf("also:  %li\n", id);
+    printf("also:  %" IGRAPH_PRId "\n", id);
 
     igraph_trie_get(&trie, "a", &id);
-    printf("a:     %li\n", id);
+    printf("a:     %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "axon", &id);
-    printf("axon:  %li\n", id);
+    printf("axon:  %" IGRAPH_PRId "\n", id);
 
     igraph_trie_get(&trie, "hello", &id);
-    printf("hello: %li\n", id);
+    printf("hello: %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "hepp", &id);
-    printf("hepp:  %li\n", id);
+    printf("hepp:  %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "alma", &id);
-    printf("alma:  %li\n", id);
+    printf("alma:  %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "also", &id);
-    printf("also:  %li\n", id);
+    printf("also:  %" IGRAPH_PRId "\n", id);
 
     /* check for existence */
     igraph_trie_check(&trie, "head", &id);
-    printf("head:  %li\n", id);
+    printf("head:  %" IGRAPH_PRId "\n", id);
     igraph_trie_check(&trie, "alma", &id);
-    printf("alma:  %li\n", id);
+    printf("alma:  %" IGRAPH_PRId "\n", id);
 
     /* destroy */
     igraph_trie_destroy(&trie);
@@ -84,47 +84,52 @@ int main() {
     igraph_trie_init(&trie, 1);
 
     igraph_trie_get(&trie, "hello", &id);
-    printf("hello: %li\n", id);
+    printf("hello: %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "hepp", &id);
-    printf("hepp:  %li\n", id);
+    printf("hepp:  %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "alma", &id);
-    printf("alma:  %li\n", id);
+    printf("alma:  %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "also", &id);
-    printf("also:  %li\n", id);
+    printf("also:  %" IGRAPH_PRId "\n", id);
 
     igraph_trie_get(&trie, "hello", &id);
-    printf("hello: %li\n", id);
+    printf("hello: %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "hepp", &id);
-    printf("hepp:  %li\n", id);
+    printf("hepp:  %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "alma", &id);
-    printf("alma:  %li\n", id);
+    printf("alma:  %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "also", &id);
-    printf("also:  %li\n", id);
+    printf("also:  %" IGRAPH_PRId "\n", id);
 
     igraph_trie_get(&trie, "a", &id);
-    printf("a:     %li\n", id);
+    printf("a:     %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "axon", &id);
-    printf("axon:  %li\n", id);
+    printf("axon:  %" IGRAPH_PRId "\n", id);
 
     igraph_trie_get(&trie, "hello", &id);
-    printf("hello: %li\n", id);
+    printf("hello: %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "hepp", &id);
-    printf("hepp:  %li\n", id);
+    printf("hepp:  %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "alma", &id);
-    printf("alma:  %li\n", id);
+    printf("alma:  %" IGRAPH_PRId "\n", id);
     igraph_trie_get(&trie, "also", &id);
-    printf("also:  %li\n", id);
+    printf("also:  %" IGRAPH_PRId "\n", id);
 
     /* check for existence */
     igraph_trie_check(&trie, "head", &id);
-    printf("head:  %li\n", id);
+    printf("head:  %" IGRAPH_PRId "\n", id);
     igraph_trie_check(&trie, "alma", &id);
-    printf("alma:  %li\n", id);
+    printf("alma:  %" IGRAPH_PRId "\n", id);
 
     for (i = 0; i < igraph_trie_size(&trie); i++) {
-        igraph_trie_idx(&trie, i, &str);
-        printf("%d: %s\n", i, str);
+        str = igraph_trie_idx(&trie, i);
+        printf("%" IGRAPH_PRId ": %s\n", i, str);
     }
+
+    /* prevent insertion of empty key */
+    igraph_set_error_handler(igraph_error_handler_ignore);
+    IGRAPH_ASSERT(igraph_trie_get(&trie, "", &id) == IGRAPH_EINVAL);
+
     igraph_trie_destroy(&trie);
 
     VERIFY_FINALLY_STACK();

@@ -10,6 +10,8 @@ target_include_directories(
   gmp_vendored
   PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/include
+  ${PROJECT_BINARY_DIR}/include
 )
 
 if (BUILD_SHARED_LIBS)
@@ -29,7 +31,7 @@ if(MSVC)
 else()
   target_compile_options(
     gmp_vendored PRIVATE
-    $<$<C_COMPILER_ID:GCC,Clang,AppleClang>:-Wno-unused-variable>
+    $<$<C_COMPILER_ID:GCC,Clang,AppleClang,IntelLLVM>:-Wno-unused-variable>
   )
 endif()
 

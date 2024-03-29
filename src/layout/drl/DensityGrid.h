@@ -38,9 +38,6 @@
 
 #include "drl_layout.h"
 #include "drl_Node.h"
-#ifdef MUSE_MPI
-    #include <mpi.h>
-#endif
 
 #include <deque>
 
@@ -82,4 +79,3 @@ private:
 } // namespace drl
 
 #endif // __DENSITY_GRID_H__
-

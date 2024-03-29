@@ -5,7 +5,33 @@ REPLACE ----- remove the " *" lines -------------------------------------------
 ^[ ]\*\s*\n
 WITH --------------------------------------------------------------------------
 \n
-REPLACE ----- for the template functions --------------------------------------
+REPLACE IN typed_list.pmt ----- for the typed list template functions ---------
+
+FUNCTION\(
+(?P<suffix>[^\)]*)
+\)\s*
+
+WITH
+
+igraph_vector_list_\g<suffix>
+
+REPLACE IN typed_list.pmt ----- typed list template item type -----------------
+
+ITEM_TYPE
+
+WITH
+
+igraph_vector_t
+
+REPLACE IN typed_list.pmt ----- typed list template type ----------------------
+
+TYPE
+
+WITH
+
+igraph_vector_list_t
+
+REPLACE IN *.pmt ----- for the template functions -----------------------------
 
 FUNCTION\(
 (?P<base>[^, \)]*)\s*,\s*
@@ -16,7 +42,7 @@ WITH
 
 \g<base>_\g<suffix>
 
-REPLACE ----- template type ---------------------------------------------------
+REPLACE IN *.pmt ----- template type ------------------------------------------
 
 TYPE\(
 (?P<type>[^\)]*)
@@ -26,11 +52,11 @@ WITH
 
 \g<type>_t
 
-REPLACE ----- template base type, we cowardly assume real number --------------
+REPLACE IN *.pmt ----- template base type, we cowardly assume real number -----
 
 BASE
 
-WITH 
+WITH
 
 igraph_real_t
 
@@ -125,14 +151,14 @@ WITH --------------------------------------------------------------------------
 
   <varlistentry><term><parameter>\g<paramname></parameter>:</term>
   <listitem><para>
-  \g<paramtext></para></listitem></varlistentry>  
+  \g<paramtext></para></listitem></varlistentry>
 
 REPLACE ----- \return command -------------------------------------------------
 
 # a return statement ends with an empty line or the end of the comment
 \\return\b\s*                     # \return command
 (?P<text>.*?)                     # the text
-(?=(\n\s*?\n)|                    # empty line or 
+(?=(\n\s*?\n)|                    # empty line or
  (\*\/)|                          # the end of the comment or
  (\\sa\b))                        # \sa command
 
@@ -297,7 +323,7 @@ WITH --------------------------------------------------------------------------
 
   <varlistentry><term><constant>\g<paramname></constant>:</term>
   <listitem><para>
-  \g<paramtext></para></listitem></varlistentry>  
+  \g<paramtext></para></listitem></varlistentry>
 
 REPLACE ----- \struct ---------------------------------------------------------
 
@@ -325,7 +351,7 @@ WITH --------------------------------------------------------------------------
 </para>
 </section>
 
-REPLACE ----- structure member descriptions, one block ------------------------
+REPLACE IN *.h ----- structure member descriptions, one block -----------------
 
 ^[\s]*\n
 (?P<before2>.*?)                # empty line+text
@@ -344,7 +370,7 @@ WITH --------------------------------------------------------------------------
 \g<members>
 </variablelist></para></formalpara><para>
 
-REPLACE ----- structure member descriptions -----------------------------------
+REPLACE IN *.h ----- structure member descriptions ----------------------------
 
 \\member\b\s*                    # \enumval command
 (?P<paramname>(\w+)|(...))\s+     # name of the parameter
@@ -408,6 +434,15 @@ REPLACE ----- \varname command ------------------------------------------------
 WITH
 
 <varname>\g<var></varname>
+
+REPLACE ----- references, \ref command, special case for igraph_vector_int ----
+
+\\ref\b\s*
+igraph_vector_int_(?P<what>\w+)(?P<paren>([\(][\)])?)
+
+WITH --------------------------------------------------------------------------
+
+<link linkend="igraph_vector_\g<what>"><function>igraph_vector_int_\g<what>\g<paren></function></link>
 
 REPLACE ----- references, \ref command ----------------------------------------
 
@@ -613,11 +648,11 @@ REPLACE ----- replace <code> with <literal> -----------------------------------
 
 WITH --------------------------------------------------------------------------
 
-<\g<c>literal> 
+<\g<c>literal>
 
 REPLACE ----- add http:// and https:// links ----------------------------------
 
-(?P<link>https?:\/\/[-\+=&;%@./~()'\w_]*[-\+=&;%@/~'\w_])
+(?P<link>https?:\/\/[-\+=&;%@.:/~()?'\w_]*[-\+=&;%@/~'\w_])
 
 WITH --------------------------------------------------------------------------
 
@@ -696,4 +731,3 @@ We reserve the right to change the function signature without changing the
 major version of igraph. Use it at your own risk.</para>
 </warning>
 <para>
-

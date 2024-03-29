@@ -44,6 +44,7 @@ if(CPACK_SOURCE_INSTALLED_DIRECTORIES)
         INSTALL
         "${SOURCE_DIR}/AUTHORS"
         "${SOURCE_DIR}/CMakeLists.txt"
+        "${SOURCE_DIR}/CONTRIBUTORS.txt"
         "${SOURCE_DIR}/COPYING"
         "${SOURCE_DIR}/ChangeLog"
         "${SOURCE_DIR}/INSTALL"
@@ -59,14 +60,23 @@ if(CPACK_SOURCE_INSTALLED_DIRECTORIES)
         DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/src"
     )
     file(
-		INSTALL
-		"${CPACK_PACKAGE_DIRECTORY}/src/io/parsers"
-		DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/src/io"
-	)
+        INSTALL
+        "${CPACK_PACKAGE_DIRECTORY}/src/io/parsers"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/src/io"
+    )
     file(
-		INSTALL
-		"${CPACK_PACKAGE_DIRECTORY}/doc/html"
-		DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/doc"
-	)
+        INSTALL
+        "${SOURCE_DIR}/tools/removeexamples.py"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/tools"
+    )
+    file(
+        INSTALL
+        "${SOURCE_DIR}/tools/strip_licenses_from_examples.py"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/tools"
+    )
+    file(
+        INSTALL
+        "${CPACK_PACKAGE_DIRECTORY}/doc/html"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/doc"
+    )
 endif()
-

@@ -4,7 +4,7 @@
 ]>
 
 <chapter id="igraph-Cliques">
-<title>Cliques and Independent Vertex Sets</title>
+<title>Cliques and independent vertex sets</title>
 
 <para>
 These functions calculate various graph properties related
@@ -12,6 +12,7 @@ to cliques and independent vertex sets.
 </para>
 
 <section id="cliques"><title>Cliques</title>
+<!-- doxrox-include igraph_is_complete -->
 <!-- doxrox-include igraph_cliques -->
 <!-- doxrox-include igraph_clique_size_hist -->
 <!-- doxrox-include igraph_cliques_callback -->
@@ -32,7 +33,7 @@ to cliques and independent vertex sets.
 <!-- doxrox-include igraph_weighted_clique_number -->
 </section>
 
-<section id="independent-vertex-sets"><title>Independent Vertex Sets</title>
+<section id="independent-vertex-sets"><title>Independent vertex sets</title>
 <!-- doxrox-include igraph_independent_vertex_sets -->
 <!-- doxrox-include igraph_largest_independent_vertex_sets -->
 <!-- doxrox-include igraph_maximal_independent_vertex_sets -->

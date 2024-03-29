@@ -65,31 +65,26 @@ namespace igraph {
 namespace walktrap {
 
 IGRAPH_THREAD_LOCAL int Probabilities::length = 0;
-IGRAPH_THREAD_LOCAL Communities* Probabilities::C = 0;
-IGRAPH_THREAD_LOCAL float* Probabilities::tmp_vector1 = 0;
-IGRAPH_THREAD_LOCAL float* Probabilities::tmp_vector2 = 0;
-IGRAPH_THREAD_LOCAL int* Probabilities::id = 0;
-IGRAPH_THREAD_LOCAL int* Probabilities::vertices1 = 0;
-IGRAPH_THREAD_LOCAL int* Probabilities::vertices2 = 0;
+IGRAPH_THREAD_LOCAL Communities* Probabilities::C = nullptr;
+IGRAPH_THREAD_LOCAL double* Probabilities::tmp_vector1 = nullptr;
+IGRAPH_THREAD_LOCAL double* Probabilities::tmp_vector2 = nullptr;
+IGRAPH_THREAD_LOCAL int* Probabilities::id = nullptr;
+IGRAPH_THREAD_LOCAL int* Probabilities::vertices1 = nullptr;
+IGRAPH_THREAD_LOCAL int* Probabilities::vertices2 = nullptr;
 IGRAPH_THREAD_LOCAL int Probabilities::current_id = 0;
 
 
 Neighbor::Neighbor() {
-    next_community1 = 0;
-    previous_community1 = 0;
-    next_community2 = 0;
-    previous_community2 = 0;
+    next_community1 = nullptr;
+    previous_community1 = nullptr;
+    next_community2 = nullptr;
+    previous_community2 = nullptr;
     heap_index = -1;
 }
 
 Probabilities::~Probabilities() {
-    C->memory_used -= memory();
-    if (P) {
-        delete[] P;
-    }
-    if (vertices) {
-        delete[] vertices;
-    }
+    delete[] P;
+    delete[] vertices;
 }
 
 Probabilities::Probabilities(int community) {
@@ -97,7 +92,7 @@ Probabilities::Probabilities(int community) {
     int nb_vertices1 = 0;
     int nb_vertices2 = 0;
 
-    float initial_proba = 1. / float(C->communities[community].size);
+    double initial_proba = 1. / static_cast<double>(C->communities[community].size);
     int last =  C->members[C->communities[community].last_member];
     for (int m = C->communities[community].first_member; m != last; m = C->members[m]) {
         tmp_vector1[m] = initial_proba;
@@ -113,7 +108,7 @@ Probabilities::Probabilities(int community) {
             }
             if (nb_vertices1 == G->nb_vertices) {
                 for (int i = 0; i < G->nb_vertices; i++) {
-                    float proba = tmp_vector1[i] / G->vertices[i].total_weight;
+                    double proba = tmp_vector1[i] / G->vertices[i].total_weight;
                     for (int j = 0; j < G->vertices[i].degree; j++) {
                         tmp_vector2[G->vertices[i].edges[j].neighbor] += proba * G->vertices[i].edges[j].weight;
                     }
@@ -121,7 +116,7 @@ Probabilities::Probabilities(int community) {
             } else {
                 for (int i = 0; i < nb_vertices1; i++) {
                     int v1 = vertices1[i];
-                    float proba = tmp_vector1[v1] / G->vertices[v1].total_weight;
+                    double proba = tmp_vector1[v1] / G->vertices[v1].total_weight;
                     for (int j = 0; j < G->vertices[v1].degree; j++) {
                         tmp_vector2[G->vertices[v1].edges[j].neighbor] += proba * G->vertices[v1].edges[j].weight;
                     }
@@ -131,7 +126,7 @@ Probabilities::Probabilities(int community) {
             nb_vertices2 = 0;
             for (int i = 0; i < nb_vertices1; i++) {
                 int v1 = vertices1[i];
-                float proba = tmp_vector1[v1] / G->vertices[v1].total_weight;
+                double proba = tmp_vector1[v1] / G->vertices[v1].total_weight;
                 for (int j = 0; j < G->vertices[v1].degree; j++) {
                     int v2 = G->vertices[v1].edges[j].neighbor;
                     if (id[v2] == current_id) {
@@ -144,7 +139,7 @@ Probabilities::Probabilities(int community) {
                 }
             }
         }
-        float* tmp = tmp_vector2;
+        double* tmp = tmp_vector2;
         tmp_vector2 = tmp_vector1;
         tmp_vector1 = tmp;
 
@@ -156,9 +151,9 @@ Probabilities::Probabilities(int community) {
     }
 
     if (nb_vertices1 > (G->nb_vertices / 2)) {
-        P = new float[G->nb_vertices];
+        P = new double[G->nb_vertices];
         size = G->nb_vertices;
-        vertices = 0;
+        vertices = nullptr;
         if (nb_vertices1 == G->nb_vertices) {
             for (int i = 0; i < G->nb_vertices; i++) {
                 P[i] = tmp_vector1[i] / sqrt(G->vertices[i].total_weight);
@@ -172,7 +167,7 @@ Probabilities::Probabilities(int community) {
             }
         }
     } else {
-        P = new float[nb_vertices1];
+        P = new double[nb_vertices1];
         size = nb_vertices1;
         vertices = new int[nb_vertices1];
         int j = 0;
@@ -184,7 +179,6 @@ Probabilities::Probabilities(int community) {
             }
         }
     }
-    C->memory_used += memory();
 }
 
 Probabilities::Probabilities(int community1, int community2) {
@@ -193,14 +187,14 @@ Probabilities::Probabilities(int community1, int community2) {
     Probabilities* P1 = C->communities[community1].P;
     Probabilities* P2 = C->communities[community2].P;
 
-    float w1 = float(C->communities[community1].size) / float(C->communities[community1].size + C->communities[community2].size);
-    float w2 = float(C->communities[community2].size) / float(C->communities[community1].size + C->communities[community2].size);
+    double w1 = C->communities[community1].size / static_cast<double>(C->communities[community1].size + C->communities[community2].size);
+    double w2 = C->communities[community2].size / static_cast<double>(C->communities[community1].size + C->communities[community2].size);
 
 
     if (P1->size == C->G->nb_vertices) {
-        P = new float[C->G->nb_vertices];
+        P = new double[C->G->nb_vertices];
         size = C->G->nb_vertices;
-        vertices = 0;
+        vertices = nullptr;
 
         if (P2->size == C->G->nb_vertices) { // two full vectors
             for (int i = 0; i < C->G->nb_vertices; i++) {
@@ -221,9 +215,9 @@ Probabilities::Probabilities(int community1, int community2) {
         }
     } else {
         if (P2->size == C->G->nb_vertices) { // P1 partial vector, P2 full vector
-            P = new float[C->G->nb_vertices];
+            P = new double[C->G->nb_vertices];
             size = C->G->nb_vertices;
-            vertices = 0;
+            vertices = nullptr;
 
             int j = 0;
             for (int i = 0; i < P1->size; i++) {
@@ -271,9 +265,9 @@ Probabilities::Probabilities(int community1, int community2) {
             }
 
             if (nb_vertices1 > (C->G->nb_vertices / 2)) {
-                P = new float[C->G->nb_vertices];
+                P = new double[C->G->nb_vertices];
                 size = C->G->nb_vertices;
-                vertices = 0;
+                vertices = nullptr;
                 for (int i = 0; i < C->G->nb_vertices; i++) {
                     P[i] = 0.;
                 }
@@ -281,7 +275,7 @@ Probabilities::Probabilities(int community1, int community2) {
                     P[vertices1[i]] = tmp_vector1[vertices1[i]];
                 }
             } else {
-                P = new float[nb_vertices1];
+                P = new double[nb_vertices1];
                 size = nb_vertices1;
                 vertices = new int[nb_vertices1];
                 for (int i = 0; i < nb_vertices1; i++) {
@@ -291,12 +285,10 @@ Probabilities::Probabilities(int community1, int community2) {
             }
         }
     }
-
-    C->memory_used += memory();
 }
 
 double Probabilities::compute_distance(const Probabilities* P2) const {
-    double r = 0.;
+    double r = 0.0;
     if (vertices) {
         if (P2->vertices) { // two partial vectors
             int i = 0;
@@ -361,18 +353,10 @@ double Probabilities::compute_distance(const Probabilities* P2) const {
     return r;
 }
 
-long Probabilities::memory() {
-    if (vertices) {
-        return (sizeof(Probabilities) + long(size) * (sizeof(float) + sizeof(int)));
-    } else {
-        return (sizeof(Probabilities) + long(size) * sizeof(float));
-    }
-}
-
 Community::Community() {
-    P = 0;
-    first_neighbor = 0;
-    last_neighbor = 0;
+    P = nullptr;
+    first_neighbor = nullptr;
+    last_neighbor = nullptr;
     sub_community_of = -1;
     sub_communities[0] = -1;
     sub_communities[1] = -1;
@@ -382,17 +366,13 @@ Community::Community() {
 }
 
 Community::~Community() {
-    if (P) {
-        delete P;
-    }
+    delete P;
 }
 
 
 Communities::Communities(Graph* graph, int random_walks_length,
-                         long m, igraph_matrix_t *pmerges,
+                         igraph_matrix_int_t *pmerges,
                          igraph_vector_t *pmodularity) {
-    max_memory = m;
-    memory_used = 0;
     G = graph;
     merges = pmerges;
     mergeidx = 0;
@@ -400,8 +380,8 @@ Communities::Communities(Graph* graph, int random_walks_length,
 
     Probabilities::C = this;
     Probabilities::length = random_walks_length;
-    Probabilities::tmp_vector1 = new float[G->nb_vertices];
-    Probabilities::tmp_vector2 = new float[G->nb_vertices];
+    Probabilities::tmp_vector1 = new double[G->nb_vertices];
+    Probabilities::tmp_vector2 = new double[G->nb_vertices];
     Probabilities::id = new int[G->nb_vertices];
     for (int i = 0; i < G->nb_vertices; i++) {
         Probabilities::id[i] = 0;
@@ -410,22 +390,16 @@ Communities::Communities(Graph* graph, int random_walks_length,
     Probabilities::vertices2 = new int[G->nb_vertices];
     Probabilities::current_id = 0;
 
-
     members = new int[G->nb_vertices];
     for (int i = 0; i < G->nb_vertices; i++) {
         members[i] = -1;
     }
 
     H = new Neighbor_heap(G->nb_edges);
+    IGRAPH_ASSUME(G->nb_vertices >= 0); // avoid false-positive GCC warnings
     communities = new Community[2 * G->nb_vertices];
 
-// init the n single vertex communities
-
-    if (max_memory != -1) {
-        min_delta_sigma = new Min_delta_sigma_heap(G->nb_vertices * 2);
-    } else {
-        min_delta_sigma = 0;
-    }
+    // init the n single vertex communities
 
     for (int i = 0; i < G->nb_vertices; i++) {
         communities[i].this_community = i;
@@ -452,26 +426,15 @@ Communities::Communities(Graph* graph, int random_walks_length,
                 add_neighbor(N);
             }
 
-    if (max_memory != -1) {
-        memory_used += min_delta_sigma->memory();
-        memory_used += 2 * long(G->nb_vertices) * sizeof(Community);
-        memory_used += long(G->nb_vertices) * (2 * sizeof(float) + 3 * sizeof(int)); // the static data of Probabilities class
-        memory_used += H->memory() + long(G->nb_edges) * sizeof(Neighbor);
-        memory_used += G->memory();
-    }
-
     /*   int c = 0; */
     Neighbor* N = H->get_first();
-    if (N == 0) {
+    if (N == nullptr) {
         return;    /* this can happen if there are no edges */
     }
     while (!N->exact) {
         update_neighbor(N, compute_delta_sigma(N->community1, N->community2));
         N->exact = true;
         N = H->get_first();
-        if (max_memory != -1) {
-            manage_memory();
-        }
         /* TODO: this could use igraph_progress */
         /*     if(!silent) { */
         /*       c++; */
@@ -482,15 +445,22 @@ Communities::Communities(Graph* graph, int random_walks_length,
         /*     } */
     }
 
+    if (modularity) {
+        double Q = 0.0;
+        for (int i = 0; i < nb_communities; i++) {
+            if (communities[i].sub_community_of == 0) {
+                Q += (communities[i].internal_weight - communities[i].total_weight * communities[i].total_weight / G->total_weight);
+            }
+        }
+        Q /= G->total_weight;
+        VECTOR(*modularity)[mergeidx] = Q;
+    }
 }
 
 Communities::~Communities() {
     delete[] members;
     delete[] communities;
     delete H;
-    if (min_delta_sigma) {
-        delete min_delta_sigma;
-    }
 
     delete[] Probabilities::tmp_vector1;
     delete[] Probabilities::tmp_vector2;
@@ -498,22 +468,6 @@ Communities::~Communities() {
     delete[] Probabilities::vertices1;
     delete[] Probabilities::vertices2;
 }
-
-float Community::min_delta_sigma() {
-    float r = 1.;
-    for (Neighbor* N = first_neighbor; N != 0;) {
-        if (N->delta_sigma < r) {
-            r = N->delta_sigma;
-        }
-        if (N->community1 == this_community) {
-            N = N->next_community1;
-        } else {
-            N = N->next_community2;
-        }
-    }
-    return r;
-}
-
 
 void Community::add_neighbor(Neighbor* N) { // add a new neighbor at the end of the list
     if (last_neighbor) {
@@ -531,9 +485,9 @@ void Community::add_neighbor(Neighbor* N) { // add a new neighbor at the end of 
     } else {
         first_neighbor = N;
         if (N->community1 == this_community) {
-            N->previous_community1 = 0;
+            N->previous_community1 = nullptr;
         } else {
-            N->previous_community2 = 0;
+            N->previous_community2 = nullptr;
         }
     }
     last_neighbor = N;
@@ -583,95 +537,18 @@ void Communities::remove_neighbor(Neighbor* N) {
     communities[N->community1].remove_neighbor(N);
     communities[N->community2].remove_neighbor(N);
     H->remove(N);
-
-    if (max_memory != -1) {
-        if (N->delta_sigma == min_delta_sigma->delta_sigma[N->community1]) {
-            min_delta_sigma->delta_sigma[N->community1] = communities[N->community1].min_delta_sigma();
-            if (communities[N->community1].P) {
-                min_delta_sigma->update(N->community1);
-            }
-        }
-
-        if (N->delta_sigma == min_delta_sigma->delta_sigma[N->community2]) {
-            min_delta_sigma->delta_sigma[N->community2] = communities[N->community2].min_delta_sigma();
-            if (communities[N->community2].P) {
-                min_delta_sigma->update(N->community2);
-            }
-        }
-    }
 }
 
 void Communities::add_neighbor(Neighbor* N) {
     communities[N->community1].add_neighbor(N);
     communities[N->community2].add_neighbor(N);
     H->add(N);
-
-    if (max_memory != -1) {
-        if (N->delta_sigma < min_delta_sigma->delta_sigma[N->community1]) {
-            min_delta_sigma->delta_sigma[N->community1] = N->delta_sigma;
-            if (communities[N->community1].P) {
-                min_delta_sigma->update(N->community1);
-            }
-        }
-
-        if (N->delta_sigma < min_delta_sigma->delta_sigma[N->community2]) {
-            min_delta_sigma->delta_sigma[N->community2] = N->delta_sigma;
-            if (communities[N->community2].P) {
-                min_delta_sigma->update(N->community2);
-            }
-        }
-    }
 }
 
-void Communities::update_neighbor(Neighbor* N, float new_delta_sigma) {
-    if (max_memory != -1) {
-        if (new_delta_sigma < min_delta_sigma->delta_sigma[N->community1]) {
-            min_delta_sigma->delta_sigma[N->community1] = new_delta_sigma;
-            if (communities[N->community1].P) {
-                min_delta_sigma->update(N->community1);
-            }
-        }
-
-        if (new_delta_sigma < min_delta_sigma->delta_sigma[N->community2]) {
-            min_delta_sigma->delta_sigma[N->community2] = new_delta_sigma;
-            if (communities[N->community2].P) {
-                min_delta_sigma->update(N->community2);
-            }
-        }
-
-        float old_delta_sigma = N->delta_sigma;
-        N->delta_sigma = new_delta_sigma;
-        H->update(N);
-
-        if (old_delta_sigma == min_delta_sigma->delta_sigma[N->community1]) {
-            min_delta_sigma->delta_sigma[N->community1] = communities[N->community1].min_delta_sigma();
-            if (communities[N->community1].P) {
-                min_delta_sigma->update(N->community1);
-            }
-        }
-
-        if (old_delta_sigma == min_delta_sigma->delta_sigma[N->community2]) {
-            min_delta_sigma->delta_sigma[N->community2] = communities[N->community2].min_delta_sigma();
-            if (communities[N->community2].P) {
-                min_delta_sigma->update(N->community2);
-            }
-        }
-    } else {
-        N->delta_sigma = new_delta_sigma;
-        H->update(N);
-    }
+void Communities::update_neighbor(Neighbor* N, double new_delta_sigma) {
+    N->delta_sigma = new_delta_sigma;
+    H->update(N);
 }
-
-void Communities::manage_memory() {
-    while ((memory_used > max_memory) && !min_delta_sigma->is_empty()) {
-        int c = min_delta_sigma->get_max_community();
-        delete communities[c].P;
-        communities[c].P = 0;
-        min_delta_sigma->remove_community(c);
-    }
-}
-
-
 
 void Communities::merge_communities(Neighbor* merge_N) {
     int c1 = merge_N->community1;
@@ -701,23 +578,11 @@ void Communities::merge_communities(Neighbor* merge_N) {
 
     if (communities[c1].P) {
         delete communities[c1].P;
-        communities[c1].P = 0;
-        if (max_memory != -1) {
-            min_delta_sigma->remove_community(c1);
-        }
+        communities[c1].P = nullptr;
     }
     if (communities[c2].P) {
         delete communities[c2].P;
-        communities[c2].P = 0;
-        if (max_memory != -1) {
-            min_delta_sigma->remove_community(c2);
-        }
-    }
-
-    if (max_memory != -1) {
-        min_delta_sigma->delta_sigma[c1] = -1.;         // to avoid to update the min_delta_sigma for these communities
-        min_delta_sigma->delta_sigma[c2] = -1.;         //
-        min_delta_sigma->delta_sigma[nb_communities] = -1.;
+        communities[c2].P = nullptr;
     }
 
 // update the new neighbors
@@ -859,11 +724,6 @@ void Communities::merge_communities(Neighbor* merge_N) {
         }
     }
 
-    if (max_memory != -1) {
-        min_delta_sigma->delta_sigma[nb_communities] = communities[nb_communities].min_delta_sigma();
-        min_delta_sigma->update(nb_communities);
-    }
-
     nb_communities++;
     nb_active_communities--;
 }
@@ -874,32 +734,28 @@ double Communities::merge_nearest_communities() {
         update_neighbor(N, compute_delta_sigma(N->community1, N->community2));
         N->exact = true;
         N = H->get_first();
-        if (max_memory != -1) {
-            manage_memory();
-        }
     }
 
     double d = N->delta_sigma;
     remove_neighbor(N);
 
     merge_communities(N);
-    if (max_memory != -1) {
-        manage_memory();
-    }
 
     if (merges) {
         MATRIX(*merges, mergeidx, 0) = N->community1;
         MATRIX(*merges, mergeidx, 1) = N->community2;
-        mergeidx++;
     }
 
+    mergeidx++;
+
     if (modularity) {
-        float Q = 0.;
+        double Q = 0.0;
         for (int i = 0; i < nb_communities; i++) {
             if (communities[i].sub_community_of == 0) {
-                Q += (communities[i].internal_weight - communities[i].total_weight * communities[i].total_weight / G->total_weight) / G->total_weight;
+                Q += (communities[i].internal_weight - communities[i].total_weight * communities[i].total_weight / G->total_weight);
             }
         }
+        Q /= G->total_weight;
         VECTOR(*modularity)[mergeidx] = Q;
     }
 
@@ -915,18 +771,12 @@ double Communities::merge_nearest_communities() {
     return d;
 }
 
-double Communities::compute_delta_sigma(int community1, int community2) {
+double Communities::compute_delta_sigma(int community1, int community2) const {
     if (!communities[community1].P) {
         communities[community1].P = new Probabilities(community1);
-        if (max_memory != -1) {
-            min_delta_sigma->update(community1);
-        }
     }
     if (!communities[community2].P) {
         communities[community2].P = new Probabilities(community2);
-        if (max_memory != -1) {
-            min_delta_sigma->update(community2);
-        }
     }
 
     return communities[community1].P->compute_distance(communities[community2].P) * double(communities[community1].size) * double(communities[community2].size) / double(communities[community1].size + communities[community2].size);

@@ -44,10 +44,8 @@ set(
   progress.xxml
   psumtree.xxml
   random.xxml
-  scg.xxml
   separators.xxml
   sparsemat.xxml
-  sparsematrix.xxml
   spatialgames.xxml
   stack.xxml
   status.xxml
@@ -55,6 +53,7 @@ set(
   strvector.xxml
   threading.xxml
   vector.xxml
+  vectorlist.xxml
   visitors.xxml
 )
 
@@ -63,7 +62,6 @@ file(
   GLOB_RECURSE IGRAPH_SOURCES_FOR_DOXROX
   LIST_DIRECTORIES FALSE
   ${CMAKE_SOURCE_DIR}/include/*.h
-  ${CMAKE_SOURCE_DIR}/include/*.h.in
   ${CMAKE_BINARY_DIR}/include/*.h
   ${CMAKE_SOURCE_DIR}/src/*.c
   ${CMAKE_SOURCE_DIR}/src/*.cc
@@ -97,6 +95,16 @@ find_program(FOP_COMMAND fop)
 find_program(XMLLINT_COMMAND xmllint)
 find_program(XSLTPROC_COMMAND xsltproc)
 
+# GNU Texinfo documentation additionally requires the docbook2X package,
+# makeinfo (and xmllint as well). The docbook2texi command from docbook2X
+# is renamed to docbook2x-texi by many Linux distros to avoid conflict with
+# a command of the same name from the incompatible docbook-tools package.
+# We look for both command names, and prefer docbook2x-texi if found.
+# At the moment we do not validate that docbook2texi is from docbook2X
+# instead of docbook-tools. Such validation will be possible with CMake >= 3.25.
+find_program(DOCBOOK2XTEXI_COMMAND NAMES docbook2x-texi docbook2texi)
+find_program(MAKEINFO_COMMAND makeinfo)
+
 if(Python3_FOUND AND SOURCE_HIGHLIGHT_COMMAND)
   set(DOC_BUILD_SUPPORTED TRUE)
 else()
@@ -113,6 +121,12 @@ if(DOC_BUILD_SUPPORTED AND XMLLINT_COMMAND AND XSLTPROC_COMMAND AND FOP_COMMAND)
   set(PDF_DOC_BUILD_SUPPORTED TRUE)
 else()
   set(PDF_DOC_BUILD_SUPPORTED FALSE)
+endif()
+
+if(DOC_BUILD_SUPPORTED AND XMLLINT_COMMAND AND DOCBOOK2XTEXI_COMMAND AND MAKEINFO_COMMAND)
+  set(INFO_DOC_BUILD_SUPPORTED TRUE)
+else()
+  set(INFO_DOC_BUILD_SUPPORTED FALSE)
 endif()
 
 if(DOC_BUILD_SUPPORTED)
@@ -189,11 +203,16 @@ if(DOC_BUILD_SUPPORTED)
     add_custom_command(
       OUTPUT ${DOCBOOK_EXAMPLE_OUTPUT}
       COMMAND ${CMAKE_COMMAND} -E make_directory ${DOCBOOK_EXAMPLE_OUTPUT_DIR}
+      COMMAND ${Python3_EXECUTABLE}
+      ARGS
+      ${CMAKE_SOURCE_DIR}/tools/strip_licenses_from_examples.py
+      ${CMAKE_SOURCE_DIR}/${DOCBOOK_EXAMPLE_SOURCE}
+      ${CMAKE_BINARY_DIR}/${DOCBOOK_EXAMPLE_SOURCE}
       COMMAND ${SOURCE_HIGHLIGHT_COMMAND}
       ARGS
       --src-lang c
       --out-format docbook
-      --input ${CMAKE_SOURCE_DIR}/${DOCBOOK_EXAMPLE_SOURCE}
+      --input ${CMAKE_BINARY_DIR}/${DOCBOOK_EXAMPLE_SOURCE}
       --output ${DOCBOOK_EXAMPLE_OUTPUT}
       --gen-references inline
       --ctags=""
@@ -217,6 +236,15 @@ if(DOC_BUILD_SUPPORTED)
     COMMENT "Parsing documentation chunks from source code"
   )
 
+  set(DOCXML_STAMP ${CMAKE_CURRENT_BINARY_DIR}/xmlstamp)
+  add_custom_command(
+    OUTPUT ${DOCXML_STAMP}
+    COMMAND ${CMAKE_COMMAND} -E touch ${DOCXML_STAMP}
+    MAIN_DEPENDENCY igraph-docs.xml
+    DEPENDS ${DOCBOOK_INPUTS}
+  )
+  add_custom_target(docxml DEPENDS ${DOCXML_STAMP})
+
   if(HTML_DOC_BUILD_SUPPORTED)
     set(HTML_STAMP ${CMAKE_CURRENT_BINARY_DIR}/html/stamp)
 
@@ -228,7 +256,11 @@ if(DOC_BUILD_SUPPORTED)
       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/html/*.png ${CMAKE_CURRENT_BINARY_DIR}/html
       COMMAND ${CMAKE_COMMAND} -E touch ${HTML_STAMP}
       MAIN_DEPENDENCY igraph-docs.xml
-      DEPENDS ${DOCBOOK_INPUTS}
+      # The DEPENDS clause below needs to list both the xmlstamp file and the
+      # target that creates it. The former is needed to make Ninja rebuild the
+      # HTML files if the source is modified. The latter is needed to make the
+      # XCode build system happy.
+      DEPENDS ${DOCXML_STAMP} docxml
       COMMENT "Generating HTML documentation with xmlto"
     )
 
@@ -236,27 +268,37 @@ if(DOC_BUILD_SUPPORTED)
     set(HTML_TARGET html)
   endif()
 
-  if(PDF_DOC_BUILD_SUPPORTED)
-    add_custom_command(
-      OUTPUT igraph-docs-with-resolved-includes.xml
-      COMMAND ${XMLLINT_COMMAND}
-      ARGS
-      --xinclude
-      --output igraph-docs-with-resolved-includes-tmp.xml
-      igraph-docs.xml
-      COMMAND ${Python3_EXECUTABLE}
-      ARGS
-      ${CMAKE_SOURCE_DIR}/tools/removeexamples.py
-      igraph-docs-with-resolved-includes-tmp.xml
-      igraph-docs-with-resolved-includes.xml
-      COMMAND ${CMAKE_COMMAND}
-      ARGS
-      -E remove igraph-docs-with-resolved-includes-tmp.xml
-      MAIN_DEPENDENCY igraph-docs.xml
-      DEPENDS ${DOCBOOK_INPUTS}
-      COMMENT "Resolving includes in DocBook XML source"
-    )
+  add_custom_command(
+    OUTPUT igraph-docs-with-resolved-includes.xml
+    COMMAND ${XMLLINT_COMMAND}
+    ARGS
+    --xinclude
+    --output igraph-docs-with-resolved-includes-tmp.xml
+    igraph-docs.xml
+    COMMAND ${Python3_EXECUTABLE}
+    ARGS
+    ${CMAKE_SOURCE_DIR}/tools/removeexamples.py
+    igraph-docs-with-resolved-includes-tmp.xml
+    igraph-docs-with-resolved-includes.xml
+    COMMAND ${CMAKE_COMMAND}
+    ARGS
+    -E remove igraph-docs-with-resolved-includes-tmp.xml
+    MAIN_DEPENDENCY igraph-docs.xml
+    # The DEPENDS clause below needs to list both the xmlstamp file and the
+    # target that creates it. The former is needed to make Ninja rebuild the
+    # PDF file if the source is modified. The latter is needed to make the
+    # XCode build system happy.
+    DEPENDS ${DOCXML_STAMP} docxml
+  )
 
+  # Intermediate custom target because Xcode projects cannot have commands that
+  # depend on intermediate files from other commands
+  add_custom_target(
+    _generate-resolved-docbook-xml DEPENDS igraph-docs-with-resolved-includes.xml
+    COMMENT "Resolving includes in DocBook XML source"
+  )
+
+  if(PDF_DOC_BUILD_SUPPORTED)
     add_custom_command(
       OUTPUT igraph-docs.fo
       COMMAND ${XSLTPROC_COMMAND}
@@ -265,7 +307,7 @@ if(DOC_BUILD_SUPPORTED)
       --stringparam paper.type A4
       http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl
       igraph-docs-with-resolved-includes.xml
-      MAIN_DEPENDENCY igraph-docs-with-resolved-includes.xml
+      DEPENDS _generate-resolved-docbook-xml
       COMMENT "Converting DocBook XML to Apache FOP format"
     )
 
@@ -281,8 +323,36 @@ if(DOC_BUILD_SUPPORTED)
     set(PDF_TARGET pdf)
   endif()
 
-  add_custom_target(doc DEPENDS ${HTML_TARGET} ${PDF_TARGET})
+  if(INFO_DOC_BUILD_SUPPORTED)
+    add_custom_command(
+      OUTPUT igraph-docs.texi
+      COMMAND ${DOCBOOK2XTEXI_COMMAND}
+      ARGS
+      --encoding=utf-8//TRANSLIT
+      --string-param output-file=igraph-docs
+      --string-param directory-category=Libraries
+      --string-param directory-description='A fast graph library \(C\)'
+      igraph-docs-with-resolved-includes.xml
+      DEPENDS _generate-resolved-docbook-xml
+      COMMENT "Converting DocBook XML to GNU Texinfo format"
+    )
+
+    add_custom_command(
+      OUTPUT igraph-docs.info
+      COMMAND ${MAKEINFO_COMMAND}
+      ARGS --no-split igraph-docs.texi
+      MAIN_DEPENDENCY igraph-docs.texi
+      COMMENT "Generating info documentation with GNU Makeinfo"
+    )
+
+    add_custom_target(info DEPENDS igraph-docs.info)
+    set(INFO_TARGET info)
+  endif()
+
+
+  add_custom_target(doc DEPENDS ${HTML_TARGET} ${PDF_TARGET} ${INFO_TARGET})
 endif()
 
 set(HTML_DOC_BUILD_SUPPORTED ${HTML_DOC_BUILD_SUPPORTED} PARENT_SCOPE)
 set(PDF_DOC_BUILD_SUPPORTED ${PDF_DOC_BUILD_SUPPORTED} PARENT_SCOPE)
+set(INFO_DOC_BUILD_SUPPORTED ${INFO_DOC_BUILD_SUPPORTED} PARENT_SCOPE)

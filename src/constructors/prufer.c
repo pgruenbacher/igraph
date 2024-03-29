@@ -22,7 +22,7 @@
 
 #include "igraph_constructors.h"
 
-#include "igraph_interface.h"
+#include "math/safe_intop.h"
 
 /**
  * \ingroup generators
@@ -30,8 +30,9 @@
  * \brief Generates a tree from a Pr&uuml;fer sequence.
  *
  * A Pr&uuml;fer sequence is a unique sequence of integers associated
- * with a labelled tree. A tree on n vertices can be represented by a
- * sequence of n-2 integers, each between 0 and n-1 (inclusive).
+ * with a labelled tree. A tree on <code>n</code> vertices can be represented
+ * by a sequence of <code>n-2</code> integers, each between <code>0</code> and
+ * <code>n-1</code> (inclusive).
  *
  * The algorithm used by this function is based on
  * Paulius Micikevi&ccaron;ius, Saverio Caminiti, Narsingh Deo:
@@ -47,29 +48,35 @@
  *             invalid Pr&uuml;fer sequence given
  *          \endclist
  *
- * \sa \ref igraph_to_prufer(), \ref igraph_tree(), \ref igraph_tree_game()
+ * \sa \ref igraph_to_prufer(), \ref igraph_kary_tree(), \ref igraph_tree_game()
+ *
+ * Time complexity: O(|V|), where |V| is the number of vertices in the tree.
  *
  */
-int igraph_from_prufer(igraph_t *graph, const igraph_vector_int_t *prufer) {
+igraph_error_t igraph_from_prufer(igraph_t *graph, const igraph_vector_int_t *prufer) {
     igraph_vector_int_t degree;
-    igraph_vector_t edges;
-    long n;
-    long i, k;
-    long u, v; /* vertices */
-    long ec;
+    igraph_vector_int_t edges;
+    igraph_integer_t n;
+    igraph_integer_t i, k;
+    igraph_integer_t u, v; /* vertices */
+    igraph_integer_t ec;
 
-    n = igraph_vector_int_size(prufer) + 2;
+    IGRAPH_SAFE_ADD(igraph_vector_int_size(prufer), 2, &n);
 
     IGRAPH_VECTOR_INT_INIT_FINALLY(&degree, n); /* initializes vector to zeros */
-    IGRAPH_VECTOR_INIT_FINALLY(&edges, 2 * (n - 1));
+    {
+        igraph_integer_t no_of_edges2;
+        IGRAPH_SAFE_MULT(n - 1, 2, &no_of_edges2);
+        IGRAPH_VECTOR_INT_INIT_FINALLY(&edges, no_of_edges2);
+    }
 
     /* build out-degree vector (i.e. number of child vertices) and verify Prufer sequence */
     for (i = 0; i < n - 2; ++i) {
-        long u = VECTOR(*prufer)[i];
-        if (u >= n || u < 0) {
-            IGRAPH_ERROR("Invalid Prufer sequence", IGRAPH_EINVAL);
+        igraph_integer_t w = VECTOR(*prufer)[i];
+        if (w >= n || w < 0) {
+            IGRAPH_ERROR("Invalid Prufer sequence.", IGRAPH_EINVAL);
         }
-        VECTOR(degree)[u] += 1;
+        VECTOR(degree)[w] += 1;
     }
 
     v = 0;  /* initialize v now, in case Prufer sequence is empty */
@@ -109,9 +116,9 @@ int igraph_from_prufer(igraph_t *graph, const igraph_vector_int_t *prufer) {
     VECTOR(edges)[ec++] = v;
     VECTOR(edges)[ec++] = u;
 
-    IGRAPH_CHECK(igraph_create(graph, &edges, (igraph_integer_t) n, /* directed = */ 0));
+    IGRAPH_CHECK(igraph_create(graph, &edges, n, IGRAPH_UNDIRECTED));
 
-    igraph_vector_destroy(&edges);
+    igraph_vector_int_destroy(&edges);
     igraph_vector_int_destroy(&degree);
     IGRAPH_FINALLY_CLEAN(2);
 

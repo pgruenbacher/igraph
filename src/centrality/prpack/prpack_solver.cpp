@@ -13,7 +13,7 @@ void prpack_solver::initialize() {
     gsg = NULL;
     sg = NULL;
     sccg = NULL;
-	owns_bg = true;
+    owns_bg = true;
 }
 
 prpack_solver::prpack_solver(const prpack_csc* g) {
@@ -38,19 +38,21 @@ prpack_solver::prpack_solver(const prpack_edge_list* g) {
 
 prpack_solver::prpack_solver(prpack_base_graph* g, bool owns_bg) {
     initialize();
-	this->owns_bg = owns_bg;
+    this->owns_bg = owns_bg;
     TIME(read_time, bg = g);
 }
 
+#if 0
 prpack_solver::prpack_solver(const char* filename, const char* format, const bool weighted) {
     initialize();
     TIME(read_time, bg = new prpack_base_graph(filename, format, weighted));
 }
+#endif
 
 prpack_solver::~prpack_solver() {
-	if (owns_bg) {
-		delete bg;
-	}
+    if (owns_bg) {
+        delete bg;
+    }
     delete geg;
     delete gsg;
     delete sg;
@@ -432,7 +434,7 @@ prpack_result* prpack_solver::solve_via_gs_err(
     }
     // initialize delta
     double delta = 0.;
-    // run Gauss-Seidel, note that we store x/deg[i] throughout this 
+    // run Gauss-Seidel, note that we store x/deg[i] throughout this
     // iteration.
     int64_t maxedges = (int64_t)((double)num_es*std::min(
                             log(tol)/log(alpha),
@@ -453,8 +455,8 @@ prpack_result* prpack_solver::solve_via_gs_err(
             new_val += delta*u[u_exists*i]; // add the dangling node adjustment
             if (num_outlinks[i] < 0) {
                 delta += alpha*(new_val - old_val);
-            } 
-            // note that new_val > old_val, but the fabs is just for 
+            }
+            // note that new_val > old_val, but the fabs is just for
             COMPENSATED_SUM(err, -(new_val - old_val), c);
             x[i] = new_val/num_outlinks[i];
         }
@@ -509,7 +511,9 @@ prpack_result* prpack_solver::solve_via_schur_gs(
         // iterate through vertices
         int num_es_touched = 0;
         err = c = 0;
+#ifdef _OPENMP
         #pragma omp parallel for firstprivate(c) reduction(+:err, num_es_touched) schedule(dynamic, 64)
+#endif
         for (int i = num_no_in_vs; i < num_vs - num_no_out_vs; ++i) {
             double new_val = 0;
             const int start_j = tails[i];
@@ -536,7 +540,9 @@ prpack_result* prpack_solver::solve_via_schur_gs(
     } while (err/(1 - alpha) >= tol);
     // solve for the dangling nodes
     int num_es_touched = 0;
+#ifdef _OPENMP
     #pragma omp parallel for reduction(+:num_es_touched) schedule(dynamic, 64)
+#endif
     for (int i = num_vs - num_no_out_vs; i < num_vs; ++i) {
         x[i] = 0;
         const int start_j = tails[i];
@@ -621,7 +627,7 @@ prpack_result* prpack_solver::solve_via_schur_gs_uv(
 
 /** Gauss-Seidel using strongly connected components.
  * Notes:
- *   If not weighted, then we store x[i] = "x[i]/outdegree" to 
+ *   If not weighted, then we store x[i] = "x[i]/outdegree" to
  *   avoid additional arithmetic.  We don't do this for the weighted
  *   case because the adjustment may not be constant.
  */
@@ -679,7 +685,9 @@ prpack_result* prpack_solver::solve_via_scc_gs(
             err = c = 0;
             if (parallelize) {
                 // iterate through vertices
+#ifdef _OPENMP
                 #pragma omp parallel for firstprivate(c) reduction(+:err, num_es_touched) schedule(dynamic, 64)
+#endif
                 for (int i = start_comp; i < end_comp; ++i) {
                     double new_val = x_outside[i];
                     const int start_j = tails_inside[i];
@@ -876,4 +884,3 @@ prpack_result* prpack_solver::combine_uv(
     delete ret_v;
     return ret;
 }
-

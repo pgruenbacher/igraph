@@ -22,31 +22,31 @@
 
 */
 
-#ifndef NODE_H
-#define NODE_H
-
-#include <vector>
-#include <utility>
+#ifndef INFOMAP_NODE_H
+#define INFOMAP_NODE_H
 
 #include "igraph_interface.h"
 
-class Node {
-public:
+#include <vector>
 
-    Node();
-    Node(int modulenr, double tpweight);
+struct Node {
 
-    std::vector<int> members;
-    std::vector< std::pair<int, double> > inLinks;
-    std::vector< std::pair<int, double> > outLinks;
-    double selfLink;
+    Node() = default;
+    Node(igraph_integer_t modulenr, double tpweight) :
+        teleportWeight(tpweight)
+    {
+        members.push_back(modulenr); // members = [nodenr]
+    }
 
-    double teleportWeight;
-    double danglingSize;
-    double exit;
-    double size;
+    std::vector<igraph_integer_t> members;
+    std::vector< std::pair<igraph_integer_t, double> > inLinks;
+    std::vector< std::pair<igraph_integer_t, double> > outLinks;
+    double selfLink = 0.0;
+
+    double teleportWeight = 0.0;
+    double danglingSize = 0.0;
+    double exit = 0.0;
+    double size = 0.0;
 };
 
-void cpyNode(Node *newNode, Node *oldNode);
-
-#endif
+#endif // INFOMAP_NODE_H

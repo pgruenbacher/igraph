@@ -17,7 +17,7 @@
 */
 
 #include <igraph.h>
-#include "test_utilities.inc"
+#include "test_utilities.h"
 
 void compute_and_print(igraph_t *graph, igraph_vector_t *weights, igraph_bool_t directed, igraph_bool_t unconn) {
     igraph_real_t result;
@@ -33,7 +33,7 @@ void compute_and_print(igraph_t *graph, igraph_vector_t *weights, igraph_bool_t 
     printf("\n\n");
 }
 
-int main() {
+int main(void) {
     igraph_t g_0, g_1, g_2, g_3, g_lm;
     igraph_vector_t weights_0, weights_3, weights_lm, weights_lm_neg;
     igraph_real_t result;
@@ -73,6 +73,7 @@ int main() {
     printf("Graph with loops and multiple edges, ignoring direction:\n");
     compute_and_print(&g_lm, &weights_lm, 0, 1);
 
+    VERIFY_FINALLY_STACK();
     igraph_set_error_handler(igraph_error_handler_ignore);
 
     printf("Checking incorrect weight length error handling.\n");

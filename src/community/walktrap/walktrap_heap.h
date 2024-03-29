@@ -65,8 +65,8 @@ public:
     int community1;   // the two adjacent communities
     int community2;   // community1 < community2
 
-    float delta_sigma;    // the delta sigma between the two communities
-    float weight;     // the total weight of the edges between the two communities
+    double delta_sigma;    // the delta sigma between the two communities
+    double weight;     // the total weight of the edges between the two communities
     bool exact;       // true if delta_sigma is exact, false if it is only a lower bound
 
     Neighbor* next_community1;        // pointers of two double
@@ -95,40 +95,13 @@ public:
     void update(Neighbor* N);     // update a distance
     void remove(Neighbor* N);     // remove a distance
     Neighbor* get_first();        // get the first item
-    long memory();
-    bool is_empty();
+    bool is_empty() const;
 
-    Neighbor_heap(int max_size);
+    explicit Neighbor_heap(int max_size);
     ~Neighbor_heap();
-};
-
-
-class Min_delta_sigma_heap {
-private:
-    int size;
-    int max_size;
-
-    int* H;   // the heap that contains the number of each community
-    int* I;   // the index of each community in the heap (-1 = not stored)
-
-    void move_up(int index);
-    void move_down(int index);
-
-public:
-    int get_max_community();              // return the community with the maximal delta_sigma
-    void remove_community(int community);         // remove a community;
-    void update(int community);               // update (or insert if necessary) the community
-    long memory();                    // the memory used in Bytes.
-    bool is_empty();
-
-    float* delta_sigma;                    // the delta_sigma of the stored communities
-
-    Min_delta_sigma_heap(int max_size);
-    ~Min_delta_sigma_heap();
 };
 
 }
 }        /* end of namespaces */
 
 #endif // WALKTRAP_HEAP_H
-

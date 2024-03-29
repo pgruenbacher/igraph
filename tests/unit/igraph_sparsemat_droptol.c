@@ -17,9 +17,9 @@
 */
 
 #include <igraph.h>
-#include "test_utilities.inc"
+#include "test_utilities.h"
 
-int main() {
+int main(void) {
     igraph_sparsemat_t spmat;
     igraph_sparsemat_t spmat_comp;
 
@@ -50,6 +50,7 @@ int main() {
     igraph_sparsemat_destroy(&spmat);
     igraph_sparsemat_destroy(&spmat_comp);
 
+    VERIFY_FINALLY_STACK();
     igraph_set_error_handler(igraph_error_handler_ignore);
 
     printf("uncompressed matrix.\n");

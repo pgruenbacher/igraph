@@ -1,4 +1,5 @@
 No vertices:
+[ 0-by-2 ]
 1 vertex:
 [        0        1 ]
 4 vertices, disconnected, not actually bipartite, with loops and multiple edges:
@@ -35,7 +36,7 @@ No vertices:
          1        0 ]
 4 vertices, negative vgaps:
 [        0       -1
-         0       -0
+         0        0
          1       -1
-         1       -0 ]
+         1        0 ]
 4 vertices, negative hgaps, emits error.

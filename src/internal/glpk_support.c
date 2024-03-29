@@ -34,6 +34,16 @@
 
 IGRAPH_THREAD_LOCAL igraph_i_glpk_error_info_t igraph_i_glpk_error_info;
 
+/* glp_at_error() was added in GLPK 4.57. Due to the R interface, we need to
+ * support ancient GLPK versions like GLPK 4.38 so we need to guard the
+ * invocation of glp_at_error(). Note that this is a temporary workaround only
+ * for sake of supporting R 4.1, so it is enabled only if USING_R is defined */
+#ifdef USING_R
+#  define HAS_GLP_AT_ERROR (GLP_MAJOR_VERSION > 4 || (GLP_MAJOR_VERSION == 4 && GLP_MINOR_VERSION >= 57))
+#else
+#  define HAS_GLP_AT_ERROR 1
+#endif
+
 int igraph_i_glpk_terminal_hook(void *info, const char *s) {
     IGRAPH_UNUSED(info);
 
@@ -43,19 +53,20 @@ int igraph_i_glpk_terminal_hook(void *info, const char *s) {
         /* If an interruption has already occurred, do not set another error,
            to avoid an infinite loop between the term_hook (this function)
            and the error_hook. */
-        igraph_i_glpk_error_info.is_interrupted = 1;
+        igraph_i_glpk_error_info.is_interrupted = true;
         glp_error("GLPK was interrupted."); /* This dummy message is never printed */
+#if HAS_GLP_AT_ERROR
     } else if (glp_at_error()) {
         /* Copy the error messages into a buffer for later reporting */
         /* We must use glp_at_error() instead of igraph_i_glpk_error_info.is_error
          * to determine if a message is an error message, as the reporting function is
-         * called before the error function. The vendored old GLPK is patched to add support
-         * for glp_at_error(). New GLPK versions have this functions. */
+         * called before the error function. */
         const size_t n = sizeof(igraph_i_glpk_error_info.msg) / sizeof(char) - 1;
         while (*s != '\0' && igraph_i_glpk_error_info.msg_ptr < igraph_i_glpk_error_info.msg + n) {
             *(igraph_i_glpk_error_info.msg_ptr++) = *(s++);
         }
         *igraph_i_glpk_error_info.msg_ptr = '\0';
+#endif
     }
 
     return 1; /* Non-zero return value signals to GLPK not to print to the terminal */
@@ -63,7 +74,7 @@ int igraph_i_glpk_terminal_hook(void *info, const char *s) {
 
 void igraph_i_glpk_error_hook(void *info) {
     IGRAPH_UNUSED(info);
-    igraph_i_glpk_error_info.is_error = 1;
+    igraph_i_glpk_error_info.is_error = true;
     glp_free_env();
     longjmp(igraph_i_glpk_error_info.jmp, 1);
 }
@@ -107,18 +118,19 @@ void igraph_i_glp_delete_prob(glp_prob *p) {
     }
 }
 
-int igraph_i_glpk_check(int retval, const char* message) {
-    char* code = "none";
+igraph_error_t igraph_i_glpk_check(int retval, const char* message) {
+    const char *code = "none";
     char message_and_code[4096];
+    igraph_error_t ret;
 
-    if (retval == IGRAPH_SUCCESS) {
+    if (retval == 0) {
         return IGRAPH_SUCCESS;
     }
 
     /* handle errors */
-#define HANDLE_CODE(c) case c: code = #c; retval = IGRAPH_##c; break;
-#define HANDLE_CODE2(c) case c: code = #c; retval = IGRAPH_FAILURE; break;
-#define HANDLE_CODE3(c) case c: code = #c; retval = IGRAPH_INTERRUPTED; break;
+#define HANDLE_CODE(c)  case c: code = #c; ret = IGRAPH_##c; break;
+#define HANDLE_CODE2(c) case c: code = #c; ret = IGRAPH_FAILURE; break;
+#define HANDLE_CODE3(c) case c: code = #c; ret = IGRAPH_INTERRUPTED; break;
     switch (retval) {
         HANDLE_CODE(GLP_EBOUND);
         HANDLE_CODE(GLP_EROOT);
@@ -138,19 +150,20 @@ int igraph_i_glpk_check(int retval, const char* message) {
         HANDLE_CODE2(GLP_EITLIM);
 
     default:
-        IGRAPH_ERROR("Unknown GLPK error", IGRAPH_FAILURE);
+        IGRAPH_ERROR("Unknown GLPK error.", IGRAPH_FAILURE);
     }
 #undef HANDLE_CODE
 #undef HANDLE_CODE2
 #undef HANDLE_CODE3
 
-    sprintf(message_and_code, "%s (%s)", message, code);
-    IGRAPH_ERROR(message_and_code, retval);
+    snprintf(message_and_code, sizeof(message_and_code) / sizeof(message_and_code[0]),
+            "%s (%s)", message, code);
+    IGRAPH_ERROR(message_and_code, ret);
 }
 
 #else
 
-int igraph_glpk_dummy() {
+int igraph_glpk_dummy(void) {
     /* get rid of "ISO C requires a translation unit to contain at least one
      * declaration" warning */
     return 'd' + 'u' + 'm' + 'm' + 'y';

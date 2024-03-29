@@ -24,7 +24,7 @@
 #include <igraph.h>
 #include <stdio.h>
 
-int main() {
+int main(void) {
 
     igraph_t g;
     igraph_bool_t simple;
@@ -107,4 +107,3 @@ int main() {
 
     return 0;
 }
-

@@ -24,17 +24,16 @@
 #ifndef IGRAPH_HACKS_INTERNAL_H
 #define IGRAPH_HACKS_INTERNAL_H
 
+#include "igraph_decls.h"
+
 #include "config.h"
 
-#undef __BEGIN_DECLS
-#undef __END_DECLS
-#ifdef __cplusplus
-    #define __BEGIN_DECLS extern "C" {
-    #define __END_DECLS }
-#else
-    #define __BEGIN_DECLS /* empty */
-    #define __END_DECLS /* empty */
+/* The CMake feature test looks for strcasecmp/strncasecmp in strings.h */
+#if defined(HAVE_STRCASECMP) || defined(HAVE_STRNCASECMP)
+#include <strings.h>
 #endif
+
+#include <stdlib.h>
 
 __BEGIN_DECLS
 
@@ -43,9 +42,9 @@ __BEGIN_DECLS
     char* igraph_i_strdup(const char *s);
 #endif
 
-#ifndef HAVE_STPCPY
-    #define stpcpy igraph_i_stpcpy
-    char* igraph_i_stpcpy(char* s1, const char* s2);
+#ifndef HAVE_STRNDUP
+    #define strndup igraph_i_strndup
+    char* igraph_i_strndup(const char *s, size_t n);
 #endif
 
 #ifndef HAVE_STRCASECMP
@@ -53,6 +52,14 @@ __BEGIN_DECLS
         #define strcasecmp _stricmp
     #else
         #error "igraph needs strcasecmp() or _stricmp()"
+    #endif
+#endif
+
+#ifndef HAVE_STRNCASECMP
+    #ifdef HAVE__STRNICMP
+        #define strncasecmp _strnicmp
+    #else
+        #error "igraph needs strncasecmp() or _strnicmp()"
     #endif
 #endif
 

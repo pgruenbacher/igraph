@@ -1,28 +1,27 @@
 /*
    IGraph library.
-   Copyright (C) 2021  The igraph development team
-   
+   Copyright (C) 2021-2022  The igraph development team
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
    02110-1301 USA
 */
 
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
-#include "igraph.h"
+#include <igraph.h>
 #include <stdio.h>
+
+#include "../unit/test_utilities.h"
 
 int test_file(const char* fname) {
     FILE *ifile;
@@ -33,7 +32,7 @@ int test_file(const char* fname) {
     if (ifile == 0) {
         return 1;
     }
-    
+
     retval = igraph_read_graph_gml(&g, ifile);
     if (!retval) {
         /* input was accepted, this is a bug; attempt to clean up after
@@ -48,14 +47,16 @@ int test_file(const char* fname) {
     return 0;
 }
 
+#undef RUN_TEST
 #define RUN_TEST(fname) {   \
     index++;                \
     if (test_file(fname)) { \
         return index;       \
     }                       \
+    VERIFY_FINALLY_STACK(); \
 }
 
-int main(int argc, char* argv[]) {
+int main(void) {
     int index = 0;
 
     /* We do not care about errors; all we care about is that the library
@@ -64,10 +65,10 @@ int main(int argc, char* argv[]) {
 
     RUN_TEST("invalid1.gml");
     RUN_TEST("invalid2.gml");
-    RUN_TEST("invalid3.gml");
+    /* invalid3.gml was removed, parser now supports it */
     RUN_TEST("invalid4.gml");
     RUN_TEST("invalid5.gml");
+    RUN_TEST("invalid6.gml");
 
     return 0;
 }
-

@@ -17,17 +17,16 @@
 */
 
 #include <igraph.h>
-#include "test_utilities.inc"
+#include "test_utilities.h"
 
 void warning_handler_print_stdout(const char *reason, const char *file,
-                                  int line, int igraph_errno) {
-    IGRAPH_UNUSED(igraph_errno);
+                                  int line) {
     IGRAPH_UNUSED(file);
     IGRAPH_UNUSED(line);
     fprintf(stdout, "Warning: %s\n", reason);
 }
 
-int main() {
+int main(void) {
     igraph_t g_0, g_1, g_simple;
     igraph_vector_t result, weights_none, weights_simple;
 
@@ -39,7 +38,6 @@ int main() {
     igraph_vector_init(&weights_none, 0);
     igraph_vector_init_int(&weights_simple, 6, -1, 0, 1, 2, 3, 4);
 
-    igraph_set_error_handler(igraph_error_handler_ignore);
     igraph_set_warning_handler(warning_handler_print_stdout);
 
     printf("No vertices, transitivity zero, NULL weights:\n");
@@ -111,6 +109,9 @@ int main() {
     IGRAPH_ASSERT(igraph_transitivity_barrat(&g_simple, &result, igraph_vss_none(), &weights_simple, IGRAPH_TRANSITIVITY_ZERO) == IGRAPH_SUCCESS);
     print_vector(&result);
     printf("\n");
+
+    VERIFY_FINALLY_STACK();
+    igraph_set_error_handler(igraph_error_handler_ignore);
 
     printf("Wrong weight length, vss all:\n");
     IGRAPH_ASSERT(igraph_transitivity_barrat(&g_simple, &result, igraph_vss_all(), &weights_none, IGRAPH_TRANSITIVITY_ZERO) == IGRAPH_EINVAL);

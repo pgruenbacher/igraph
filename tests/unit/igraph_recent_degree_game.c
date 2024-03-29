@@ -17,9 +17,9 @@
 */
 
 #include <igraph.h>
-#include "test_utilities.inc"
+#include "test_utilities.h"
 
-int main() {
+int main(void) {
     igraph_t g;
 
     igraph_rng_seed(igraph_rng_default(), 42);
@@ -45,6 +45,7 @@ int main() {
     print_graph_canon(&g);
     igraph_destroy(&g);
 
+    VERIFY_FINALLY_STACK();
     igraph_set_error_handler(igraph_error_handler_ignore);
 
     /*Negative number of vertices*/

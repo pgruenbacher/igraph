@@ -30,6 +30,44 @@
 
 __BEGIN_DECLS
 
+struct igraph_i_property_cache_t;
+typedef struct igraph_i_property_cache_t igraph_i_property_cache_t;
+
+typedef enum {
+    /* Stores whether the graph has at least one self-loop. */
+    IGRAPH_PROP_HAS_LOOP = 0,
+
+    /* Stores whether the graph has at least one multi-edge, taking into account
+     * edge directions in directed graphs. In other words, this property should
+     * be false for a directed graph with edges (a, b) and (b, a), and true
+     * for a directed graph with edges (a, b) and (a, b) again. */
+    IGRAPH_PROP_HAS_MULTI,
+
+    /* Stores whether the graph has at least one reciprocal edge pair. Ignored
+     * in undirected graphs. This property should be true for a directed graph
+     * with edges (a, b) and (b, a), and false for a directed graph with
+     * edges (a, b) and (a, b) again. Self-loops (a, a) are not considered
+     * reciprocal. */
+    IGRAPH_PROP_HAS_MUTUAL,
+
+    /* Stores whether the graph is weakly connected. */
+    IGRAPH_PROP_IS_WEAKLY_CONNECTED,
+
+    /* Stores whether the graph is strongly connected. Ignored in undirected graphs. */
+    IGRAPH_PROP_IS_STRONGLY_CONNECTED,
+
+    /* Stores whether the graph is a directed acyclic graph. Not used for
+     * undirected graphs. */
+    IGRAPH_PROP_IS_DAG,
+
+    /* Stores whether the graph is a forest, i.e. an undirected or directed
+     * graph that is cycle-free even if we ignore edge directions. */
+    IGRAPH_PROP_IS_FOREST,
+
+    /* Dummy value used to count enum values */
+    IGRAPH_PROP_I_SIZE
+} igraph_cached_property_t;
+
 /**
  * \ingroup internal
  * \struct igraph_t
@@ -62,8 +100,8 @@ __BEGIN_DECLS
  * are canonicalized so that the index of the 'from' vertex is not greater
  * than the index of the 'to' vertex. Thus, if v1 <= v2, only the edge (v1, v2)
  * needs to be searched for, not (v2, v1), to determine if v1 and v2 are connected.
- * However, this fact is NOT guaranteed by the documented public API, 
- * and should not be relied upon by the implementation of any functions, 
+ * However, this fact is NOT guaranteed by the documented public API,
+ * and should not be relied upon by the implementation of any functions,
  * except those belonging to the minimal API in type_indexededgelist.c.
  *
  * The storage requirements for a graph with \c |V| vertices
@@ -72,14 +110,17 @@ __BEGIN_DECLS
 typedef struct igraph_s {
     igraph_integer_t n;
     igraph_bool_t directed;
-    igraph_vector_t from;
-    igraph_vector_t to;
-    igraph_vector_t oi;
-    igraph_vector_t ii;
-    igraph_vector_t os;
-    igraph_vector_t is;
+    igraph_vector_int_t from;
+    igraph_vector_int_t to;
+    igraph_vector_int_t oi;
+    igraph_vector_int_t ii;
+    igraph_vector_int_t os;
+    igraph_vector_int_t is;
     void *attr;
+    igraph_i_property_cache_t *cache;
 } igraph_t;
+
+IGRAPH_EXPORT void igraph_invalidate_cache(const igraph_t* graph);
 
 __END_DECLS
 

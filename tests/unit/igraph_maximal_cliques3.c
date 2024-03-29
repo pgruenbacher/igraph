@@ -23,56 +23,30 @@
 
 #include <igraph.h>
 
-#include "test_utilities.inc"
+#include "test_utilities.h"
 
-int sort_cmp(const void *a, const void *b) {
-    const igraph_vector_t **da = (const igraph_vector_t **) a;
-    const igraph_vector_t **db = (const igraph_vector_t **) b;
-    int i, alen = igraph_vector_size(*da), blen = igraph_vector_size(*db);
-    if (alen != blen) {
-        return (alen < blen) - (alen > blen);
-    }
-    for (i = 0; i < alen; i++) {
-        int ea = VECTOR(**da)[i], eb = VECTOR(**db)[i];
-        if (ea != eb) {
-            return (ea > eb) - (ea < eb);
-        }
-    }
-    return 0;
-}
-
-void sort_cliques(igraph_vector_ptr_t *cliques) {
-    int i, n = igraph_vector_ptr_size(cliques);
+void sort_cliques(igraph_vector_int_list_t *cliques) {
+    igraph_integer_t i, n = igraph_vector_int_list_size(cliques);
     for (i = 0; i < n; i++) {
-        igraph_vector_t *v = VECTOR(*cliques)[i];
-        igraph_vector_sort(v);
+        igraph_vector_int_sort(igraph_vector_int_list_get_ptr(cliques, i));
     }
-    igraph_qsort(VECTOR(*cliques), (size_t) n,
-                 sizeof(igraph_vector_t *), sort_cmp);
+    igraph_vector_int_list_sort(cliques, igraph_vector_int_lex_cmp);
 }
 
-int print_and_destroy(igraph_vector_ptr_t *cliques) {
-    int i, n = igraph_vector_ptr_size(cliques);
+void print_and_destroy(igraph_vector_int_list_t *cliques) {
     sort_cliques(cliques);
-    for (i = 0; i < n; i++) {
-        igraph_vector_t *v = VECTOR(*cliques)[i];
-        igraph_vector_print(v);
-        igraph_vector_destroy(v);
-    }
-    igraph_vector_ptr_destroy_all(cliques);
-    return 0;
+    print_vector_int_list(cliques);
+    igraph_vector_int_list_destroy(cliques);
 }
 
-int main() {
+int main(void) {
     igraph_t graph;
-    igraph_vector_ptr_t cliques;
+    igraph_vector_int_list_t cliques;
 
-    igraph_rng_seed(igraph_rng_default(), 42);
-    igraph_erdos_renyi_game(&graph, IGRAPH_ERDOS_RENYI_GNP,
-                            /*n=*/ 100, /*p=*/ 0.7, /*directed=*/ 0,
-                            /*loops=*/ 0);
+    igraph_rng_seed(igraph_rng_default(), 41);
+    igraph_erdos_renyi_game_gnp(&graph, 100, 0.7, /*directed=*/ 0, /*loops=*/ 0);
 
-    igraph_vector_ptr_init(&cliques, 0);
+    igraph_vector_int_list_init(&cliques, 0);
 
     igraph_maximal_cliques(&graph, &cliques, /*min_size=*/ 15,
                            /*max_size=*/ 0);

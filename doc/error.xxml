@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
-<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" 
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
                "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
 <!ENTITY igraph "igraph">
 ]>
 
 <chapter id="igraph-Error">
-<title>Error Handling</title>
+<title>Error handling</title>
 
 <section id="error-handling-basics">
 <!-- doxrox-include error_handling_basics -->
@@ -21,6 +21,7 @@
 
 <section id="error-codes">
 <!-- doxrox-include error_codes -->
+<!-- doxrox-include igraph_error_t -->
 <!-- doxrox-include igraph_error_type_t -->
 <!-- doxrox-include igraph_strerror -->
 </section>
@@ -52,6 +53,7 @@
 <!-- doxrox-include igraph_error -->
 <!-- doxrox-include igraph_errorf -->
 <!-- doxrox-include IGRAPH_CHECK -->
+<!-- doxrox-include IGRAPH_CHECK_CALLBACK -->
 </section>
 
 <section id="deallocating-memory">
@@ -68,6 +70,7 @@
 <section id="fatal-error-handlers">
 <!-- doxrox-include fatal_error_handlers -->
 <!-- doxrox-include igraph_fatal_handler_t -->
+<!-- doxrox-include igraph_set_fatal_handler -->
 <!-- doxrox-include igraph_fatal_handler_abort -->
 <!-- doxrox-include IGRAPH_FATAL -->
 <!-- doxrox-include IGRAPH_FATALF -->

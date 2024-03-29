@@ -10,18 +10,24 @@ function(add_legacy_test FOLDER NAME NAMESPACE)
   set(TEST_NAME "${NAMESPACE}::${NAME}")
 
   add_executable(${TARGET_NAME} EXCLUDE_FROM_ALL ${PROJECT_SOURCE_DIR}/${FOLDER}/${NAME}.c)
+  use_all_warnings(${TARGET_NAME})
   add_dependencies(build_tests ${TARGET_NAME})
-  target_link_libraries(${TARGET_NAME} PRIVATE igraph)
-
-  if (NOT BUILD_SHARED_LIBS)
-    # Add a compiler definition required to compile igraph in static mode
-    target_compile_definitions(${TARGET_NAME} PRIVATE IGRAPH_STATIC)
+  # Specify linking with test_utilities *before* linking with igraph, to avoid
+  # duplicating libigraph.a. See https://github.com/igraph/igraph/issues/2394
+  if (NAMESPACE STREQUAL "test")
+    target_link_libraries(${TARGET_NAME} PRIVATE test_utilities)
   endif()
+  target_link_libraries(${TARGET_NAME} PRIVATE igraph)
 
   # Some tests depend on internal igraph headers so we also have to add src/
   # to the include path even though it's not part of the public API
   target_include_directories(
-    ${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/vendor ${CMAKE_BINARY_DIR}/src
+    ${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src
+  )
+
+  # Some tests include cs.h from CXSparse
+  target_include_directories(
+    ${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/vendor/cs
   )
 
   if (MSVC)
@@ -35,6 +41,7 @@ function(add_legacy_test FOLDER NAME NAMESPACE)
   get_filename_component(WORK_DIR ${EXPECTED_OUTPUT_FILE} DIRECTORY)
 
   if(EXISTS ${EXPECTED_OUTPUT_FILE})
+    get_property(CROSSCOMPILING_EMULATOR TARGET ${TARGET_NAME} PROPERTY CROSSCOMPILING_EMULATOR)
     add_test(
       NAME ${TEST_NAME}
       COMMAND ${CMAKE_COMMAND}
@@ -45,6 +52,7 @@ function(add_legacy_test FOLDER NAME NAMESPACE)
         -DDIFF_TOOL=${DIFF_TOOL}
         -DFC_TOOL=${FC_TOOL}
         -DIGRAPH_VERSION=${PACKAGE_VERSION}
+        "-DCROSSCOMPILING_EMULATOR=${CROSSCOMPILING_EMULATOR}"
         -P ${CMAKE_SOURCE_DIR}/etc/cmake/run_legacy_test.cmake
     )
     set_property(TEST ${TEST_NAME} PROPERTY SKIP_REGULAR_EXPRESSION "Test skipped")

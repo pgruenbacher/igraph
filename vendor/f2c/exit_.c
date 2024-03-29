@@ -9,6 +9,7 @@
  */
 
 #include "f2c.h"
+#include "igraph_error.h"
 #undef abs
 #undef min
 #undef max
@@ -33,7 +34,7 @@ exit_(integer *rc)
 #ifdef NO_ONEXIT
 	f_exit();
 #endif
-	exit(*rc);
+	IGRAPH_FATAL("exit_() called from f2c code");
 	}
 #ifdef __cplusplus
 }

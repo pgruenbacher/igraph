@@ -17,9 +17,9 @@
 */
 
 #include <igraph.h>
-#include "test_utilities.inc"
+#include "test_utilities.h"
 
-int main() {
+int main(void) {
     igraph_vector_int_t result;
     igraph_matrix_t m_pdc, m_0, m_m34, m_m43;
     int pdc[] = {9, 2, 7, 8,
@@ -47,6 +47,7 @@ int main() {
     igraph_solve_lsap(&m_0, 0, &result);
     print_vector_int(&result);
 
+    VERIFY_FINALLY_STACK();
     igraph_set_error_handler(igraph_error_handler_ignore);
 
     printf("\n4 tasks, 3 agents, n = 4.\n");

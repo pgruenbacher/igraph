@@ -17,7 +17,7 @@
 */
 
 #include <igraph.h>
-#include "test_utilities.inc"
+#include "test_utilities.h"
 
 void call_and_print(igraph_t *graph, int size, igraph_vector_t *cut_prob) {
     igraph_integer_t result;
@@ -25,7 +25,7 @@ void call_and_print(igraph_t *graph, int size, igraph_vector_t *cut_prob) {
     printf("Result: %" IGRAPH_PRId "\n\n", result);
 }
 
-int main() {
+int main(void) {
     igraph_t g_0, g_1, g_50_full, g_4_3_1;
     igraph_vector_t cut_prob_0_3;
     igraph_vector_t cut_prob_0_4;
@@ -61,10 +61,10 @@ int main() {
     printf("Triangle and a vertex, motif size 4:\n");
     call_and_print(&g_4_3_1, /*size*/ 4, &cut_prob_0_4);
 
-    igraph_set_error_handler(igraph_error_handler_ignore);
+    VERIFY_FINALLY_STACK();
 
     printf("Cut prob too short.\n");
-    IGRAPH_ASSERT(igraph_motifs_randesu_no(&g_4_3_1, &result, /*size*/ 14, &cut_prob_0_3) == IGRAPH_EINVAL);
+    CHECK_ERROR(igraph_motifs_randesu_no(&g_4_3_1, &result, /*size*/ 14, &cut_prob_0_3), IGRAPH_EINVAL);
 
     igraph_destroy(&g_0);
     igraph_destroy(&g_1);

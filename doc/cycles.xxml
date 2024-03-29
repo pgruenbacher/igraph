@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" 
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
                "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
 <!ENTITY igraph "igraph">
 ]>
@@ -12,6 +12,11 @@
 <!-- doxrox-include igraph_is_eulerian -->
 <!-- doxrox-include igraph_eulerian_cycle -->
 <!-- doxrox-include igraph_eulerian_path -->
+</section>
+
+<section><title>Cycle bases</title>
+<!-- doxrox-include igraph_fundamental_cycles -->
+<!-- doxrox-include igraph_minimum_cycle_basis -->
 </section>
 
 </chapter>

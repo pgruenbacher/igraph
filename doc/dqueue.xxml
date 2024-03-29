@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" 
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
                "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
 <!ENTITY igraph "igraph">
 ]>
@@ -16,6 +16,7 @@
 <!-- doxrox-include igraph_dqueue_size -->
 <!-- doxrox-include igraph_dqueue_head -->
 <!-- doxrox-include igraph_dqueue_back -->
+<!-- doxrox-include igraph_dqueue_get -->
 <!-- doxrox-include igraph_dqueue_pop -->
 <!-- doxrox-include igraph_dqueue_pop_back -->
 <!-- doxrox-include igraph_dqueue_push -->

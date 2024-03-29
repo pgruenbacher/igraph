@@ -17,9 +17,9 @@
 */
 
 #include <igraph.h>
-#include "test_utilities.inc"
+#include "test_utilities.h"
 
-int main() {
+int main(void) {
     /*igraph_subisomorphic now calls igraph_subisomorphic_vf2, most of
       the testing is done through calling that directly*/
     igraph_t g1, g2;
@@ -49,6 +49,7 @@ int main() {
     igraph_destroy(&g1);
     igraph_destroy(&g2);
 
+    VERIFY_FINALLY_STACK();
     igraph_set_error_handler(igraph_error_handler_ignore);
 
     printf("Mismatching directedness.\n");

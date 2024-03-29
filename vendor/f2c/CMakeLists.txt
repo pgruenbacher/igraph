@@ -15,12 +15,35 @@ set(
 if(F2C_EXTERNAL_ARITH_HEADER)
   configure_file(${F2C_EXTERNAL_ARITH_HEADER} arith.h COPYONLY)
 else()
+  if (CMAKE_CROSSCOMPILING AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
+    # Warn only, as in some circumstances, such as macOS with Rosetta,
+    # arithchk can still be run through emulation and the build with not fail.
+    message(WARNING 
+      "Cross-compiling with internal ARPACK, BLAS or LAPACK, but "
+      "F2C_EXTERNAL_ARITH_HEADER was not set and no cross-compiling "
+      "emulator was provided in CMAKE_CROSSCOMPILING_EMULATOR either. "
+      "The build is likely to fail. See igraph's installation instructions "
+      "for more information.")
+  endif()
   add_custom_command(
     OUTPUT arith.h
     COMMENT "Generating arith.h for f2c..."
     COMMAND arithchk > ${CMAKE_CURRENT_BINARY_DIR}/arith.h
     DEPENDS arithchk
     VERBATIM
+  )
+endif()
+
+# Hidden CMake option for Szabolcs so he can collect arith.h headers from
+# multiple systems in CI
+option(IGRAPH_PRINT_ARITH_HEADER "Print the contents of the generated arith.h for debugging purposes")
+mark_as_advanced(IGRAPH_PRINT_ARITH_HEADER)
+if(IGRAPH_PRINT_ARITH_HEADER)
+  add_custom_command(
+    TARGET arithchk POST_BUILD
+    COMMENT "Printing contents of arith.h..."
+    COMMAND arithchk
+    VERBATIM USES_TERMINAL
   )
 endif()
 
@@ -82,6 +105,10 @@ target_include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
+# Since these are included as object files, they should call the
+# function as is (without visibility specification)
+target_compile_definitions(f2c_vendored PRIVATE IGRAPH_STATIC)
+
 if (WIN32)
   target_compile_definitions(f2c_vendored PRIVATE MSDOS)
 endif()
@@ -90,7 +117,7 @@ if (MSVC)
   target_include_directories(
     f2c_vendored
     PUBLIC
-	${PROJECT_SOURCE_DIR}/msvc/include
+    ${PROJECT_SOURCE_DIR}/msvc/include
   )
 endif()
 
@@ -107,11 +134,11 @@ if(MSVC)
   )
 else()
   target_compile_options(arithchk PRIVATE 
-    $<$<C_COMPILER_ID:GCC,Clang,AppleClang>:-Wno-format-zero-length>
+    $<$<C_COMPILER_ID:GCC,Clang,AppleClang,IntelLLVM>:-Wno-format-zero-length>
   )
   target_compile_options(
     f2c_vendored PRIVATE 
-    $<$<C_COMPILER_ID:GCC,Clang,AppleClang>:-Wno-parentheses -Wno-pointer-to-int-cast -Wno-implicit-function-declaration -Wno-format-zero-length>
+    $<$<C_COMPILER_ID:GCC,Clang,AppleClang,IntelLLVM>:-Wno-parentheses -Wno-pointer-to-int-cast -Wno-implicit-function-declaration -Wno-format-zero-length>
     $<$<C_COMPILER_ID:Intel>:-Wno-parentheses -Wno-pointer-to-int-cast -Wno-implicit-function-declaration>
   )
 endif()

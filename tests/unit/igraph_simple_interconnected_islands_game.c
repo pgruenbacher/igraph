@@ -17,9 +17,9 @@
 */
 
 #include <igraph.h>
-#include "test_utilities.inc"
+#include "test_utilities.h"
 
-int main() {
+int main(void) {
     igraph_t g;
 
     igraph_rng_seed(igraph_rng_default(), 42);
@@ -48,12 +48,19 @@ int main() {
     print_graph_canon(&g);
     igraph_destroy(&g);
 
-    printf("Three islands, full graphs, 20 connections between islands.\n");
+    printf("Three islands, full graphs, 16 connections between islands.\n");
     IGRAPH_ASSERT(igraph_simple_interconnected_islands_game(&g, /*number of islands*/3, /*size of islands*/ 4,
-                  /*islands_pin*/ 1, /*number of edges between two islands*/ 20) == IGRAPH_SUCCESS);
-    IGRAPH_ASSERT(igraph_ecount(&g) == 18 + 60);
+                  /*islands_pin*/ 1, /*number of edges between two islands*/ 16) == IGRAPH_SUCCESS);
+    IGRAPH_ASSERT(igraph_ecount(&g) == 18 + 48);
     igraph_destroy(&g);
 
+    printf("Three islands, random graphs, 3 connections between islands.\n");
+    IGRAPH_ASSERT(igraph_simple_interconnected_islands_game(&g, /*number of islands*/3, /*size of islands*/ 4,
+                  /*islands_pin*/ 0.5, /*number of edges between two islands*/ 3) == IGRAPH_SUCCESS);
+    print_graph_canon(&g);
+    igraph_destroy(&g);
+
+    VERIFY_FINALLY_STACK();
     igraph_set_error_handler(igraph_error_handler_ignore);
 
     printf("Negative number of islands.\n");
@@ -74,6 +81,11 @@ int main() {
     printf("Negative number of edges between islands.\n");
     IGRAPH_ASSERT(igraph_simple_interconnected_islands_game(&g, /*number of islands*/2, /*size of islands*/ 4,
                   /*islands_pin*/ 1, /*number of edges between two islands*/ -3) == IGRAPH_EINVAL);
+    igraph_destroy(&g);
+
+    printf("Too many edges between islands.\n");
+    IGRAPH_ASSERT(igraph_simple_interconnected_islands_game(&g, /*number of islands*/3, /*size of islands*/ 4,
+                  /*islands_pin*/ 1, /*number of edges between two islands*/ 20) == IGRAPH_EINVAL);
     igraph_destroy(&g);
 
     VERIFY_FINALLY_STACK();

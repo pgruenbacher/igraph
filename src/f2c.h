@@ -7,10 +7,6 @@
 #ifndef F2C_INCLUDE
 #define F2C_INCLUDE
 
-#include "linalg/blas_internal.h"
-#include "linalg/lapack_internal.h"
-#include "linalg/arpack_internal.h"
-
 typedef int integer;
 typedef unsigned int uinteger;
 typedef char *address;
@@ -145,7 +141,7 @@ union Multitype {   /* for multiple entry points */
 
 typedef union Multitype Multitype;
 
-/*typedef long int Long;*/  /* No longer used; formerly in Namelist */
+/*typedef igraph_integer_t Long;*/  /* No longer used; formerly in Namelist */
 
 struct Vardesc {    /* for Namelist */
     char *name;
@@ -234,5 +230,12 @@ typedef doublereal E_f; /* real function with -R not specified */
 #endif
 
 #include "config.h"
+
+/* It is an ugly hack that we add these headers here, but it is needed to make
+ * the combination of external BLAS/LAPACK and internal ARPACK work */
+
+#include "linalg/blas_internal.h"
+#include "linalg/lapack_internal.h"
+#include "linalg/arpack_internal.h"
 
 #endif
