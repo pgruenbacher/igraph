@@ -219,6 +219,160 @@ int igraph_shortest_paths_dijkstra(const igraph_t *graph,
     return 0;
 }
 
+
+int igraph_shortest_paths_dijkstra_max_dist(const igraph_t *graph,
+                                   igraph_matrix_t *res,
+                                   const igraph_vs_t from,
+                                   const igraph_vs_t to,
+                                   const igraph_vector_t *weights,
+                                   igraph_neimode_t mode, double maxDist) {
+
+    /* Implementation details. This is the basic Dijkstra algorithm,
+       with a binary heap. The heap is indexed, i.e. it stores not only
+       the distances, but also which vertex they belong to.
+
+       From now on we use a 2-way heap, so the distances can be queried
+       directly from the heap.
+
+       Dirty tricks:
+       - the opposite of the distance is stored in the heap, as it is a
+         maximum heap and we need a minimum heap.
+       - we don't use IGRAPH_INFINITY in the res matrix during the
+         computation, as IGRAPH_FINITE() might involve a function call
+         and we want to spare that. -1 will denote infinity instead.
+    */
+
+    long int no_of_nodes = igraph_vcount(graph);
+    long int no_of_edges = igraph_ecount(graph);
+    igraph_2wheap_t Q;
+    igraph_vit_t fromvit, tovit;
+    long int no_of_from, no_of_to;
+    igraph_lazy_inclist_t inclist;
+    long int i, j;
+    igraph_real_t my_infinity = IGRAPH_INFINITY;
+    igraph_bool_t all_to;
+    igraph_vector_t indexv;
+
+    if (!weights) {
+        return igraph_shortest_paths(graph, res, from, to, mode);
+    }
+
+    if (igraph_vector_size(weights) != no_of_edges) {
+        IGRAPH_ERROR("Weight vector length does not match", IGRAPH_EINVAL);
+    }
+    if (no_of_edges > 0) {
+        igraph_real_t min = igraph_vector_min(weights);
+        if (min < 0) {
+            IGRAPH_ERROR("Weight vector must be non-negative", IGRAPH_EINVAL);
+        }
+        else if (igraph_is_nan(min)) {
+            IGRAPH_ERROR("Weight vector must not contain NaN values", IGRAPH_EINVAL);
+        }
+    }
+
+    IGRAPH_CHECK(igraph_vit_create(graph, from, &fromvit));
+    IGRAPH_FINALLY(igraph_vit_destroy, &fromvit);
+    no_of_from = IGRAPH_VIT_SIZE(fromvit);
+
+    IGRAPH_CHECK(igraph_2wheap_init(&Q, no_of_nodes));
+    IGRAPH_FINALLY(igraph_2wheap_destroy, &Q);
+    IGRAPH_CHECK(igraph_lazy_inclist_init(graph, &inclist, mode, IGRAPH_LOOPS));
+    IGRAPH_FINALLY(igraph_lazy_inclist_destroy, &inclist);
+
+    all_to = igraph_vs_is_all(&to);
+    if (all_to) {
+        no_of_to = no_of_nodes;
+    } else {
+        IGRAPH_VECTOR_INIT_FINALLY(&indexv, no_of_nodes);
+        IGRAPH_CHECK(igraph_vit_create(graph, to, &tovit));
+        IGRAPH_FINALLY(igraph_vit_destroy, &tovit);
+        no_of_to = IGRAPH_VIT_SIZE(tovit);
+        for (i = 0; !IGRAPH_VIT_END(tovit); IGRAPH_VIT_NEXT(tovit)) {
+            long int v = IGRAPH_VIT_GET(tovit);
+            if (VECTOR(indexv)[v]) {
+                IGRAPH_ERROR("Duplicate vertices in `to', this is not allowed",
+                             IGRAPH_EINVAL);
+            }
+            VECTOR(indexv)[v] = ++i;
+        }
+    }
+
+    IGRAPH_CHECK(igraph_matrix_resize(res, no_of_from, no_of_to));
+    igraph_matrix_fill(res, my_infinity);
+
+    for (IGRAPH_VIT_RESET(fromvit), i = 0;
+         !IGRAPH_VIT_END(fromvit);
+         IGRAPH_VIT_NEXT(fromvit), i++) {
+
+        long int reached = 0;
+        long int source = IGRAPH_VIT_GET(fromvit);
+        igraph_2wheap_clear(&Q);
+        igraph_2wheap_push_with_index(&Q, source, -1.0);
+
+        while (!igraph_2wheap_empty(&Q)) {
+            long int minnei = igraph_2wheap_max_index(&Q);
+            igraph_real_t mindist = -igraph_2wheap_deactivate_max(&Q);
+
+            // Stop if we exceed the max distance threshold
+            if (mindist > maxDist) {
+                igraph_2wheap_clear(&Q);
+                break;
+            }
+
+            igraph_vector_int_t *neis;
+            long int nlen;
+
+            if (all_to) {
+                MATRIX(*res, i, minnei) = mindist - 1.0;
+            } else {
+                if (VECTOR(indexv)[minnei]) {
+                    MATRIX(*res, i, (long int)(VECTOR(indexv)[minnei] - 1)) = mindist - 1.0;
+                    reached++;
+                    if (reached == no_of_to) {
+                        igraph_2wheap_clear(&Q);
+                        break;
+                    }
+                }
+            }
+
+            /* Now check all neighbors of 'minnei' for a shorter path */
+            neis = igraph_lazy_inclist_get(&inclist, (igraph_integer_t) minnei);
+            nlen = igraph_vector_int_size(neis);
+            for (j = 0; j < nlen; j++) {
+                long int edge = (long int) VECTOR(*neis)[j];
+                long int tto = IGRAPH_OTHER(graph, edge, minnei);
+                igraph_real_t altdist = mindist + VECTOR(*weights)[edge];
+                if (altdist > maxDist) continue;
+                igraph_bool_t active = igraph_2wheap_has_active(&Q, tto);
+                igraph_bool_t has = igraph_2wheap_has_elem(&Q, tto);
+                igraph_real_t curdist = active ? -igraph_2wheap_get(&Q, tto) : 0.0;
+                if (!has) {
+                    /* This is the first non-infinite distance */
+                    IGRAPH_CHECK(igraph_2wheap_push_with_index(&Q, tto, -altdist));
+                } else if (altdist < curdist) {
+                    /* This is a shorter path */
+                    IGRAPH_CHECK(igraph_2wheap_modify(&Q, tto, -altdist));
+                }
+            }
+
+        } /* !igraph_2wheap_empty(&Q) */
+
+    } /* !IGRAPH_VIT_END(fromvit) */
+
+    if (!all_to) {
+        igraph_vit_destroy(&tovit);
+        igraph_vector_destroy(&indexv);
+        IGRAPH_FINALLY_CLEAN(2);
+    }
+
+    igraph_lazy_inclist_destroy(&inclist);
+    igraph_2wheap_destroy(&Q);
+    igraph_vit_destroy(&fromvit);
+    IGRAPH_FINALLY_CLEAN(3);
+
+    return 0;
+}
+
 /**
  * \ingroup structural
  * \function igraph_get_shortest_paths_dijkstra
